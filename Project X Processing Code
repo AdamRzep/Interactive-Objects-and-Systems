@@ -1,0 +1,141 @@
+Pixel colors [][] = new Pixel[6][200];
+
+import processing.serial.*;
+
+Serial port;
+int val;
+String arduinoValues;
+float[] arduinoColors;
+
+float red = 0;
+float orange = 0;
+float yellow = 0;
+float green = 0;
+float blue = 0;
+float purple = 0;
+
+boolean redOn = false;
+boolean orangeOn = false;
+boolean yellowOn = false;
+boolean greenOn = false;
+boolean blueOn = false;
+boolean purpleOn = false;
+
+
+void setup() {
+  //size(1920, 1080);
+  fullScreen();
+  background(255); //white
+  //create six color arrays, fill each color with 50 pixels 
+  for (int i=0; i<6; i++){ //6 colors
+    for (int j=0; j<200; j++){ //50 pixels per color
+      Pixel p = new Pixel();
+      colors[i][j] = p; //create new pixel within color
+    }
+  }
+  println("list:  "+Serial.list());
+  String portName = Serial.list()[0]; //usbserial-...N/1/N - AT
+  port = new Serial(this, portName, 9600);
+  port.bufferUntil('\n');
+}
+
+void draw() {
+  if (0 < port.available()){
+    String values = port.readStringUntil('\n');
+    if (values != null){
+    arduinoColors = float(split(values, ","));
+    //val = arduinoValues.readStringUntil('\n');
+    println("val: "+ values);
+    println(arduinoColors.length);
+    if (arduinoColors.length == 7){
+    yellow = arduinoColors[0];
+    orange = arduinoColors[1];
+    purple = arduinoColors[2];
+    green = arduinoColors[3];
+    blue = arduinoColors[4];
+    red = arduinoColors[5];
+    //println("red: " + red);
+    println("red:" + red + "  orange:" + orange + "  yellow:" + yellow + "  green:" + green + "  blue:" + blue + "  purple:" + purple);
+    }
+    }
+  }
+  if (red > 1000){
+    redOn = true;
+  }
+  if (orange > 1000){
+    orangeOn = true;
+  }
+  if (yellow > 1000){
+    yellowOn = true;
+  }
+  if (green > 1000){
+    greenOn = true;
+  }
+  if (blue > 1000){
+    blueOn = true;
+  }
+  if (purple > 1000){
+    purpleOn = true;
+  }
+  
+  if (red < 100){
+    redOn = false;
+  }
+  if (orange < 100){
+    orangeOn = false;
+  }
+  if (yellow < 100){
+    yellowOn = false;
+  }
+  if (green < 100){
+    greenOn = false;
+  }
+  if (blue < 100){
+    blueOn = false;
+  }
+  if (purple < 100){
+    purpleOn = false;
+  }
+  
+  if (redOn){
+    for (int j=0; j<200; j++){ colors[0][j].create(0);} //red
+  }
+  if (orangeOn){
+    for (int j=0; j<200; j++){ colors[1][j].create(1);} //orange
+  }
+  if (yellowOn){
+    for (int j=0; j<200; j++){ colors[2][j].create(2);} //yellow
+  }
+  if (greenOn){
+    for (int j=0; j<200; j++){ colors[3][j].create(3);} //green
+  }
+  if (blueOn){
+    for (int j=0; j<200; j++){ colors[4][j].create(4);} //blue
+  }
+  if (purpleOn){
+    for (int j=0; j<200; j++){ colors[5][j].create(5);} //purple
+  }
+}
+
+class Pixel{
+  float x = random(width); //inital x location
+  float y = random(height); //initial y location
+  float d = random(1, 100); //initial diameter
+  //this.dir = 1;
+  void create(int c){
+    noStroke(); 
+    if (c==0){fill(211, 19, 19, 10);} //red
+    if (c==1){fill(239, 121, 23, 10);}; //orange
+    if (c==2){fill(255, 246, 76, 10);}; //yellow
+    if (c==3){fill(24, 155, 27, 10);}; //green
+    if (c==4){fill(37, 132, 234, 10);}; //blue
+    if (c==5){fill(144, 26, 204, 10);}; //purple
+    ellipse(this.x, this.y, this.d, this.d); //draw circle
+    this.x += random(-30, 30); //move circle x
+    this.y += random(-30, 30); //move circle y 
+    this.d += random(-20, 20); //change circle size
+    if (this.d > 150 || this.d < 0){ //bound diameter
+      this.d = 50;
+    }
+  }
+}
