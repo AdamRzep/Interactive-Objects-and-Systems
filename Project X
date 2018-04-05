@@ -35,5 +35,5 @@ void loop()
     Serial.print(sensor6);                // print sensor output 6
     Serial.println(",");                  // add comma for parsing
 
-    delay(400);                             // wait a bit 
+    delay(100);                             // wait a bit 
 }
