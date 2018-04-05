@@ -22,17 +22,18 @@ void loop()
     long sensor6 =  cs_4_12.capacitiveSensor(30);         // store value of cap. sensor 6
 
 
-    Serial.print(sensor1);                  // print sensor output 1
-    Serial.print("\t");                     // add space between values
-    Serial.print(sensor2);                  // print sensor output 2
-    Serial.print("\t");                     // add space between values
-    Serial.print(sensor3);                  // print sensor output 3
-    Serial.print("\t");                     // add space between values
-    Serial.print(sensor4);                  // print sensor output 4
-    Serial.print("\t");                     // add space between values
-    Serial.print(sensor5);                  // print sensor output 5
-    Serial.print("\t");                     // add space between values
-    Serial.println(sensor6);                // print sensor output 6
+    Serial.print(sensor1);                // print sensor output 1
+    Serial.print(",");                    // add comma for parsing
+    Serial.print(sensor2);                // print sensor output 2
+    Serial.print(",");                    // add comma for parsing
+    Serial.print(sensor3);                // print sensor output 3
+    Serial.print(",");                    // add comma for parsing
+    Serial.print(sensor4);                // print sensor output 4
+    Serial.print(",");                    // add comma for parsing
+    Serial.print(sensor5);                // print sensor output 5
+    Serial.print(",");                    // add comma for parsing
+    Serial.print(sensor6);                // print sensor output 6
+    Serial.println(",");                  // add comma for parsing
 
-    delay(100);                             // wait a bit 
+    delay(400);                             // wait a bit 
 }
