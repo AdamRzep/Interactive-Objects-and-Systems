@@ -1,0 +1,38 @@
+#include <CapacitiveSensor.h>                             // include library for capacitance sensor
+
+CapacitiveSensor   cs_4_2 = CapacitiveSensor(4,2);        // sensor between pins 4 and 2
+CapacitiveSensor   cs_4_6 = CapacitiveSensor(4,6);        // sensor between pins 4 and 6
+CapacitiveSensor   cs_4_8 = CapacitiveSensor(4,8);        // sensor between pins 4 and 8
+CapacitiveSensor   cs_4_10 = CapacitiveSensor(4,10);      // sensor between pins 4 and 10
+CapacitiveSensor   cs_4_11 = CapacitiveSensor(4,11);      // sensor between pins 4 and 11
+CapacitiveSensor   cs_4_12 = CapacitiveSensor(4,12);      // sensor between pins 4 and 12
+
+void setup()                    
+{
+   Serial.begin(9600);                           // begin serial monitoring
+}
+
+void loop()                    
+{
+    long sensor1 =  cs_4_2.capacitiveSensor(30);          // store value of cap. sensor 1
+    long sensor2 =  cs_4_6.capacitiveSensor(30);          // store value of cap. sensor 2
+    long sensor3 =  cs_4_8.capacitiveSensor(30);          // store value of cap. sensor 3
+    long sensor4 =  cs_4_10.capacitiveSensor(30);         // store value of cap. sensor 4
+    long sensor5 =  cs_4_11.capacitiveSensor(30);         // store value of cap. sensor 5
+    long sensor6 =  cs_4_12.capacitiveSensor(30);         // store value of cap. sensor 6
+
+
+    Serial.print(sensor1);                  // print sensor output 1
+    Serial.print("\t");                     // add space between values
+    Serial.print(sensor2);                  // print sensor output 2
+    Serial.print("\t");                     // add space between values
+    Serial.print(sensor3);                  // print sensor output 3
+    Serial.print("\t");                     // add space between values
+    Serial.print(sensor4);                  // print sensor output 4
+    Serial.print("\t");                     // add space between values
+    Serial.print(sensor5);                  // print sensor output 5
+    Serial.print("\t");                     // add space between values
+    Serial.println(sensor6);                // print sensor output 6
+
+    delay(100);                             // wait a bit 
+}
