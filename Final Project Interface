@@ -1,0 +1,289 @@
+import guru.ttslib.*;
+
+import processing.serial.*;
+
+import com.temboo.core.*;
+import com.temboo.Library.Yahoo.Weather.*;
+
+// Create a session using your Temboo account application details
+TembooSession session = new TembooSession("adamr71", "myFirstApp", "7kAMzy57l75JnLqHoG9TVQaqfDVDGFh1");
+
+int temperature;      // holds current temperature
+int high;             // holds high temperature for the day
+int low;              // holds low teemperature for the day
+String day = "";      // holds the day
+String date = "";     // holds the date
+int weather;          // holds the weather
+XML weatherResults;   // XML which holds data from the Yahoo weather API
+
+Serial myPort;        // the serial port which it will be reading from
+String val = "";      // holds the string from the serial port
+
+TTS tts;              // used for text to speech
+boolean hasSpoken = false;    // see if it has spoken yet
+
+int rectX, rectY;
+int rectSize = 90;
+int mode = 0;          // current mode; 0 = neutral, 1 = recording, 2 = playback, 3 = clear
+String input = "";     // holds the users keystrokes when writing reminder
+boolean rectOverOne = false;    // is mouse over recording button
+boolean rectOverTwo = false;    // is mouse over playback button
+boolean rectOverThree = false;  // is mouse over clear button
+
+int index = 0;          // stores index in reminder string array
+int spacing = 0;        // spacing for playback
+StringList reminders;   // list of all reminders written out
+String[] allReminders;  // array for the strings
+
+
+void setup() {
+  size(1280, 720);              // size of window
+  //fullScreen();
+  background(229, 229, 204);    // color for background
+  rectX = width/2-rectSize-10;
+  rectY = height/2-rectSize/2;
+  ellipseMode(CENTER);
+  
+  // Run the GetWeatherByAddress Choreo function
+  runGetWeatherByAddressChoreo();
+  getTemperatureFromXML();
+  
+  reminders = new StringList();    // initialize reminders stringList
+  
+  // check serial port
+  String portName = Serial.list()[0];
+  myPort = new Serial(this, portName, 9600);
+  
+  tts = new TTS();        // initialize text to speech
+}
+
+void draw() {
+  update();
+  background(229, 229, 204);    // set background color
+  stroke(0);
+  
+  // if serial port is available then read from it and store under val
+  if (myPort.available() > 0){
+    val = myPort.readStringUntil('\n');
+  }
+  val = trim(val);    // remove whitespace from string
+  println(val);       // check to see if values are coming through
+  
+  if (val != null){    // if val isn't pointing to anything then ignore
+    if (val.equals("Recording...")){    // if recording button is pressed, set mode to recording
+      mode = 1;
+      val = null;
+    }
+    else if (val.equals("Playing Back:")){    // if playback button is pressed, set mode to playback
+      mode = 2;
+      val = null;
+    }
+    else if (val.equals("Clearing List...")){    // if clear button is pressed, set mode to clear
+      mode = 3;
+      val = null;
+    }
+  }
+  
+  // Record button
+  if (rectOverOne) {
+    fill(135, 135, 108);
+  } else {
+    fill(219, 218, 214);
+  }
+  rect(240, 565, 200, 50);
+  
+  // Playback button
+  if (rectOverTwo) {
+    fill(135, 135, 108);
+  } else {
+    fill(219, 218, 214);
+  }
+  rect(540, 565, 200, 50);
+  
+  // Clear button
+  if (rectOverThree) {
+    fill(135, 135, 108);
+  } else {
+    fill(219, 218, 214);
+  }
+  rect(840, 565, 200, 50);
+  
+  // text for the buttons
+  fill(0);
+  textSize(36);
+  text("Record", 280, 605);
+  text("Playback", 565, 605);
+  text("Clear", 894, 605);
+  
+  
+  fill(0);
+  textSize(60);
+  text(day+"      "+date, 50, 70);      // show date at top of screen
+  if (minute() < 10){                   // display the current time
+    text(hour()+":0"+minute(), 1060, 70);
+  } else {
+    text(hour()+":"+minute(), 1060, 70);
+  }
+  
+  // neutral state
+  if (mode == 0){
+    
+    //text(date, 600, 90);
+    
+    // display current temperature
+    textSize(360);
+    text(temperature, 170, 460);
+    textSize(60);
+    text("ºF", 610, 230);
+    
+    // display high and low temperatures for the day
+    textSize(70);
+    text("High: "+high+"ºF", 740, 290);
+    text("Low: "+low+"ºF", 740, 380);
+  }
+  
+  // record status
+  if (mode == 1){
+    fill(0);
+    textSize(50);
+    text("Enter Reminder", 450, 190);
+    
+    // input box
+    fill(225, 236, 247);
+    rect(rectX - 400, rectY - 100, 1000, 200);
+    
+    // show the user's input
+    fill(0);
+    text(input, 160, 270);
+  }
+  
+  // playback status
+  if (mode == 2){
+    textSize(50);
+    for (int i = 0; i < index; i++){      // run through entire list of reminders and print to screen
+      if (allReminders != null){
+        text(allReminders[i], 240, 180 + spacing);
+      }
+      if (!hasSpoken){
+        tts.speak(allReminders[i]);      // speak the current reminders
+      }
+      spacing += 60;          // spacing between reminders
+    }
+    //delay(5000);
+    //mode = 0;
+    spacing = 0;
+    hasSpoken = true;
+  }
+  
+  // clear status
+  if (mode == 3){
+    textSize(130);
+    text("Clearing list", 260, 300);
+    
+    // clear the entire list and array of all reminders
+    allReminders = null;
+    reminders = new StringList();
+    index = 0;
+    //delay(2000);
+    //mode = 0;
+  }
+}
+
+void update() {
+  // check if mouse is over recording button
+  if ( overRect(240, 565, 200, 50) ) {
+    rectOverOne = true;
+  } else {
+    rectOverOne = false;
+  }
+  
+  // check if mouse is over playback button
+  if ( overRect(540, 565, 200, 50) ) {
+    rectOverTwo = true;
+  } else {
+    rectOverTwo = false;
+  }
+  
+  // check if mouse is over clear button
+  if ( overRect(840, 565, 200, 50) ) {
+    rectOverThree = true;
+  } else {
+    rectOverThree = false;
+  }
+}
+
+void mousePressed() {
+  // change the mode based off which button is pressed
+  if (rectOverOne) {
+    mode = 1;
+  }
+  
+  if (rectOverTwo) {
+    mode = 2;
+  }
+  
+  if (rectOverThree) {
+    mode = 3;
+  }
+}
+
+boolean overRect(int x, int y, int width, int height)  {
+  if (mouseX >= x && mouseX <= x+width && 
+      mouseY >= y && mouseY <= y+height) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+void runGetWeatherByAddressChoreo() {
+  // Create the Choreo object using your Temboo session
+  GetWeatherByAddress getWeatherByAddressChoreo = new GetWeatherByAddress(session);
+
+  // Set inputs
+  getWeatherByAddressChoreo.setAddress("New York");
+
+  // Run the Choreo and store the results
+  GetWeatherByAddressResultSet getWeatherByAddressResults = getWeatherByAddressChoreo.run();
+
+  // Store results in an XML object
+  weatherResults = parseXML(getWeatherByAddressResults.getResponse());
+}
+
+void getTemperatureFromXML() {
+  // Narrow down to weather condition
+  XML condition = weatherResults.getChild("channel/item/yweather:condition");
+  XML forecast = weatherResults.getChild("channel/item/yweather:forecast");
+
+  // Get the current temperature in Fahrenheit from the conditions
+  temperature = condition.getInt("temp");
+  high = forecast.getInt("high");
+  low = forecast.getInt("low");
+  day = forecast.getString("day");
+  date = forecast.getString("date");
+
+  // Print temperature value
+  println("The current temperature in New York is "+temperature+"ºF");
+  println("The high for today is "+high+"ºF");
+  println("The low for today is "+low+"ºF");
+}
+
+void keyPressed(){
+  if (mode == 1){
+    if (key==ENTER||key==RETURN) {    // if enter key is pressed while on reminder input screen, save the reminder in string list and go back to initial screen
+      mode = 0;
+      reminders.append(input);
+      input = "";
+      index++;
+      allReminders = reminders.array();
+    } else {
+      input = input + key;
+    }
+  }
+  if (mode >= 2){
+     if (key==ENTER||key==RETURN) {    // if enter key is pressed while on playback or clear screen, return back to initial screen and reset text to speech
+      mode = 0;
+      hasSpoken = false;
+      }
+    }
+}
