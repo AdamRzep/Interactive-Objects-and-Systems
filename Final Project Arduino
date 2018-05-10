@@ -1,0 +1,153 @@
+#include <SPI.h>
+#include <LiquidCrystal.h>
+
+#define IRSENSORPIN 8     // pin for IR sensor
+
+LiquidCrystal lcd(9);
+
+const int buttonOne = 2;    // button one pin
+const int buttonTwo = 3;    // button two pin
+const int buttonThree = 4;  // button three pin
+const int ledOne = 5;      // LED for button one
+const int ledTwo = 6;      // LED for button two
+const int ledThree = 7;    // LED for button three
+
+int lastIRState = 0;        // holds last IR sensor state to keep track if recently broken
+
+
+int ledOneState = LOW;          // state of LED one, recording
+int buttonOneState;             // holds reading for button one
+int lastButtonOneState = LOW;   // holds previous reading for button one
+
+int ledTwoState = LOW;          // state of LED two, playback
+int buttonTwoState;             // holds reading for button two
+int lastButtonTwoState = LOW;   // holds previous reading for button two
+
+int ledThreeState = LOW;          // state of LED three, clear list
+int buttonThreeState;             // holds reading for button three
+int lastButtonThreeState = LOW;   // holds previous reading for button three
+
+String objectString;            // string which will hold all recorded commands
+
+
+unsigned long lastDebounceOneTime = 0;    // the last time the output pin was toggled
+unsigned long lastDebounceTwoTime = 0;    // the last time the output pin was toggled
+unsigned long lastDebounceThreeTime = 0;  // the last time the output pin was toggled
+unsigned long debounceDelay = 50;         // debounce time
+
+void setup() {
+
+  lcd.begin(16, 2);                           // set up number of columns and rows
+
+  // prints start screen to lcd
+  lcd.print("Hello");
+  lcd.setCursor(0, 1);
+  lcd.print("It's 68 Degrees");
+  
+  pinMode(buttonOne, INPUT);      // set button one pin to input
+  pinMode(ledOne, OUTPUT);        // set LED one pin to output
+
+  pinMode(buttonTwo, INPUT);      // set button two pin to input
+  pinMode(ledTwo, OUTPUT);        // set LED two pin to output
+
+  pinMode(buttonThree, INPUT);    // set button three pin to input
+  pinMode(ledThree, OUTPUT);      // set LED three pin to output
+
+  digitalWrite(ledOne, ledOneState);        // set LED one to LOW
+  digitalWrite(ledTwo, ledTwoState);        // set LED two to LOW
+  digitalWrite(ledThree, ledThreeState);    // set LED three to LOW
+
+  pinMode(IRSENSORPIN, INPUT);        // set pin for IR sensor
+  digitalWrite(IRSENSORPIN, HIGH);    // turn on the pullup
+
+  Serial.begin(9600);             // begin serial monitoring
+}
+
+void loop() {
+  int readingOne = digitalRead(buttonOne);        // take reading from button one
+  int readingTwo = digitalRead(buttonTwo);        // take reading from button two
+  int readingThree = digitalRead(buttonThree);    // take reading from button three
+  
+  if (readingOne != lastButtonOneState) {
+    lastDebounceOneTime = millis();               // reset debounce time for button one
+  }
+
+
+  if (readingTwo != lastButtonTwoState) {
+    lastDebounceTwoTime = millis();               // reset debounce time for button two
+  }
+
+  if (readingThree != lastButtonThreeState) {
+    lastDebounceThreeTime = millis();             // reset debounce time for button three
+  }
+
+  if (!digitalRead(IRSENSORPIN) && lastIRState){  // check if IR beam was broken
+    Serial.println("Playing Back:");              // start playback when broken
+  }
+  lastIRState = digitalRead(IRSENSORPIN);         // store past IR state
+
+  if ((millis() - lastDebounceOneTime) > debounceDelay) {
+    if (readingOne != buttonOneState) {
+      buttonOneState = readingOne;                // set button one state to current reading
+
+      if (buttonOneState == HIGH) {
+        ledOneState = !ledOneState;               // inverse LED one state
+        digitalWrite(ledOne, ledOneState);        // set LED one to current state
+        Serial.println("Recording...");           // state that it's recording
+        //while(buttonOneState == HIGH) {           // while button is held down, keep recording
+          //objectString += "object,";              // add object to string (placeholder)
+          //delay(800);                             // wait a while
+          //readingOne = digitalRead(buttonOne);    // take another reading of button one
+          //buttonOneState = readingOne;            // set button one state to new reading
+          //Serial.print("object,");                // show how item is being added to string
+        //}
+        //Serial.println();                         // add some space
+        //Serial.println("End Recording.");         // state end of recording when button is released
+        ledOneState = !ledOneState;               // inverse LED state
+      }
+      
+    }
+  }
+
+  if ((millis() - lastDebounceTwoTime) > debounceDelay) {
+    if (readingTwo != buttonTwoState) {
+      buttonTwoState = readingTwo;                // set button two state to current reading
+
+      if (buttonTwoState == HIGH) {
+        ledTwoState = !ledTwoState;               // inverse LED two state
+        digitalWrite(ledTwo, ledTwoState);        // set LED two to current state
+        Serial.println("Playing Back:");          // state that recording is going to be played back
+        Serial.println(objectString);             // print string of all recordings
+        //delay(500);                               // wait a bit after printing
+        ledTwoState = !ledTwoState;               // inverse LED two state
+      }
+      
+    }
+  }
+
+  if ((millis() - lastDebounceThreeTime) > debounceDelay) {
+    if (readingThree != buttonThreeState) {
+      buttonThreeState = readingThree;
+
+      if (buttonThreeState == HIGH) {
+        ledThreeState = !ledThreeState;           // inverse LED three state
+        digitalWrite(ledThree, ledThreeState);        // set LED three to current state
+        Serial.println("Clearing List...");       // state that list is being cleared
+        objectString = "";                        // clear string
+        //delay(500);                               // wait a bit
+        ledThreeState = !ledThreeState;           // inverse LED three state
+      }
+      
+    }
+  }
+
+  // set the LEDS
+  digitalWrite(ledOne, ledOneState);    
+  digitalWrite(ledTwo, ledTwoState);
+  digitalWrite(ledThree, ledThreeState);
+
+  // store the new reading for the buttons
+  lastButtonOneState = readingOne;
+  lastButtonTwoState = readingTwo;
+  lastButtonThreeState = readingThree;
+}
